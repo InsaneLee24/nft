@@ -1,0 +1,58 @@
+	1. Netstat -ano -p TCP
+	외부 주소 및 포트, PID 출력됨
+	프로토콜 변경할 수 있음
+	
+	2. Tasklist /v /FI "PID eq 0000" /FO LIST
+Netstat 로 PID 를 확인한 뒤 해당 프로그램이 어떤건지 알 수 있다.
+
+
+** 모니터링 push APP 코드 수정
+
+ 번 서버에서 모니터링 알람 코드 수정
+
+Push app 사용자 ID 변경 (협력업체 POVIS ID 없을 경우)
+
+
+# insert by Sanguk Lee - push app -171207 ####
+use LWP::UserAgent;
+use Encode;
+my $ua = LWP::UserAgent->new;
+my $server_endpoint = "https://wpsc.postech.ac.kr/psh/itf/sendMessage.do";
+###########################################################################
+
+
+sub send_push
+{
+        print "\tSend_Push\n";
+        # set custom HTTP request header fields
+        my $req = HTTP::Request->new(POST => $server_endpoint);
+        $req->header('content-type' => 'application/x-www-form-urlencoded');
+        $req->header('x-auth-token' => 'kfksj48sdfj4jd9d');
+        # add POST data to HTTP request body
+        # systemId, groups, fireGroups, sns, body, linkType, link, emergencyYn, appId
+        #my $post_data = '{ "systemId": "MONITORING", "groups": "", "fireGroups": "", "sns": "00100243", "body": "Hello", "linkType": "", "link": "", "emergencyYn": "Y", "appId": "kr.ac.postech.ea" }';
+        my $systemId = "MONITORING";
+        #my $sns = "U1000056";
+        my $sns = $id;
+        #my $sns = "sulee82";
+        #my $sns = "00021260,00100438,00100634";
+        #my $kor = "¼­¹?C?´?E?μ: Server Down";
+        my $kor = $messages;
+        my $body = encode('utf-8', decode('euc-kr', $kor));
+        my $linkType = "IMAGE";
+        #my $link = "https://mail-login.postech.ac.kr/adfs/ls/images/postech/spring.jpg, http://povis.postech.ac.kr/kr.ac.postech.navigation.masthead/images/logo.jpg";
+        my $emergencyYn = "N";
+        my $appId = "kr.ac.postech.alim";
+        #my $post_data = "systemId=$systemId&groups=&fireGroups=&sns=$sns&body=$body&linkType=$linkType&link=$link&emergencyYn=$emergencyYn&appId=$appId";
+        my $post_data = "systemId=$systemId&groups=&fireGroups=&sns=$sns&body=$body&emergencyYn=$emergencyYn&appId=$appId";
+        $req->content($post_data);
+        my $resp = $ua->request($req);
+        if ($resp->is_success) {
+            my $message = $resp->decoded_content;
+            print "Received reply: $message\n";
+        }
+        else {
+            print "HTTP POST error code: ", $resp->code, "\n";
+            print "HTTP POST error message: ", $resp->message, "\n";
+        }
+}
